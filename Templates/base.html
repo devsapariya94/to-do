@@ -15,16 +15,27 @@
         <a href="{{ url_for('index') }}" class="text-white font-bold text-lg">To-Do App</a>
         <div>
           <a href="{{ url_for('index') }}" class="inline-block py-2 px-4 text-white bg-gray-900 hover:bg-gray-700 rounded-lg mr-2">Home</a>
-         
-        </div>
+          {% if not current_user.is_authenticated %}
+          <a href="{{ url_for('login') }}" class="inline-block py-2 px-4 text-white bg-gray-900 hover:bg-gray-700 rounded-lg mr-2">Login</a>
+          <a href="{{ url_for('signup') }}" class="inline-block py-2 px-4 text-white bg-gray-900 hover:bg-gray-700 rounded-lg">Register</a>
+          {% else %}
+          <a href="{{ url_for('logout') }}" class="inline-block py-2 px-4 text-white bg-gray-900 hover:bg-gray-700 rounded-lg">Logout</a>
+          {% endif %}
+
+                  </div>
       </div>
     </nav>
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     <div class="container mx-auto my-4">
       {% for message in messages %}
-      <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 my-2" role="alert">
-        <p>{{ message }}</p>
+        {% if message[0] == 'error' %}
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 my-2" role="alert">
+        {% else %}
+          <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 my-2" role="alert">
+        {% endif %}
+      
+        <p>{{ message[1] }}</p>
       </div>
       {% endfor %}
     </div>

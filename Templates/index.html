@@ -1,24 +1,47 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+<script>
+    function check_input() {
+        var input = document.getElementById("new-task").value;
+        if (input == "") {
+            alert("Please enter a task");
+        } else {
+            document.getElementById("submit-task").type = "submit";
+        }
+
+    }
+
+</script>
     <div class="container mx-auto py-8">
         <div class="flex items-center mb-4">
-            <form action="{{ url_for('index') }}" method="POST" class="flex w-full">
-                <div class="flex-grow mr-4">
-                    <input type="text" name="content" class="appearance-none border rounded py-2 px-3 text-grey-darker" style="font-family: 'Montserrat', sans-serif;" placeholder="Enter task" aria-label="Enter task">
+            <form action="/" method="post"  class="flex w-full">
+                <div class="flex-grow mr-4 pl-10 pr-10">
+                    <input type="text" name="content" id="new-task" class="appearance-none border rounded py-2 px-3 text-grey-darker w-full" style="font-family: 'Montserrat', sans-serif;" placeholder="Enter task" aria-label="Enter task">
                 </div>
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Add Task</button>
+                <div class="pr-10">
+                <!-- <button id="submit-task" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="check_input()">Add Task</button> -->
+                <button id="submit-task" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="button" onclick="check_input()">Add Task</button>
+            </div>
             </form>
+        </div>
         </div>
 
         {% for task in tasks %}
-        <div class="flex items-center py-4 border-b">
+        <div class="flex items-center py-4 border-b pl-10">
             <div class="w-1/12">
                 <input type="checkbox" name="completed" onchange="updateCompletionStatus({{ task.id }}, this.checked)" aria-label="Checkbox for completed task" {% if task.completed %} checked {% endif %}>
             </div>
+            {% if task.completed %}
             <div class="w-10/12">
-                <input type="text" class="appearance-none bg-transparent border-none w-full text-grey-darker mr-3 py-1 px-2 leading-tight focus:outline-none" style="font-family: 'Montserrat', sans-serif;" value="{{ task.content }}" readonly>
+                <input type="text" class="appearance-none bg-transparent border-none w-full mr-3 py-1 px-2 leading-tight focus:outline-none line-through text-grey-100/[0.5]" style="font-family: 'Montserrat', sans-serif;" value="{{ task.content }}" readonly>
             </div>
+            {% else %}
+            <div class="w-10/12">
+                <input type="text" class="appearance-none bg-transparent border-none w-full text-grey-darker mr-3 py-1 px-2 leading-tight focus:outline-none" style="font-family: 'Montserrat', sans-serif; font-weight: bold;" value="{{ task.content }}" readonly>
+            </div>
+            {% endif %}
             <div class="w-1/6">
                 <a href="{{ url_for('update', id=task.id) }}" class="inline-block bg-gray-300 hover:bg-gray-400 rounded py-2 px-4 mr-2">Edit</a>
                 <a href="{{ url_for('delete', id=task.id) }}" class="inline-block bg-red-500 hover:bg-red-700 text-white font-bold rounded py-2 px-4">Delete</a>
@@ -26,4 +49,23 @@
         </div>
         {% endfor %}
     </div>
+
+    <script>
+        function updateCompletionStatus(id, completed) {
+            fetch('/complete/' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    completed: completed
+                })
+            }).then(function(response) {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+
+    </script>
 {% endblock %}

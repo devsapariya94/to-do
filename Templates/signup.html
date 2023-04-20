@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script>
+  function check_pass(){
+    console.log(123);
+    if (document.getElementById('password').value ==
+      document.getElementById('confirm_password').value) {
+        document.getElementById('signup-btn').type = "submit";
+    } else {
+      alert("Passwords do not match");
+    }
+  }
+</script>
+<div class="container mx-auto max-w-sm mt-8">
+  <div class="bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-4">Sign Up</h1>
+    <form method="POST" action="{{ url_for('signup') }}">
+      <div class="mb-4">
+        <label class="block font-bold mb-2" for="email">Email</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" name="email" type="email" placeholder="Email">
+      </div>
+      <div class="mb-4">
+        <label class="block font-bold mb-2" for="password">Password</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"  id="password" name="password" type="password" placeholder="Password">
+      </div>
+      <div class="mb-4">
+        <label class="block font-bold mb-2" for="confirm_password">Confirm Password</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="confirm_password" name="confirm_password" type="password" placeholder="Confirm Password">
+      </div>
+      <div class="flex items-center justify-between">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button" id="signup-btn" onclick="check_pass()">
+          Sign Up
+        </button>
+        <a class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="{{ url_for('login') }}">
+          Already have an account? Login
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

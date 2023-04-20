@@ -1,40 +1,69 @@
 # // simple flask app
 from datetime import timedelta
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import os
+import json
+import hashlib
+
 app = Flask(__name__)
 app.secret_key = 'hello'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.sqlite3'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+login_manager = LoginManager(app)
 app.permanent_session_lifetime = timedelta(days=1)
+
+
+
+with open('config.json', 'r') as c:
+    params = json.load(c)["params"]
+
+
+DB_NAME = "database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(DB_NAME)
+
 db = SQLAlchemy(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
     completed = db.Column(db.Boolean, default=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    def __repr__(self):
-        return '<Task %r>' % self.id
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 #create database if it is not present
-
-if not os.path.exists('instance/todo.sqlite3'):
+print(os.path.exists(DB_NAME))
+if not os.path.exists(DB_NAME):
     with app.app_context():
         db.create_all()
+    print('Created Database!')
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     if request.method == 'POST':
+        print(11111111111111)
         task_content = request.form['content']
-        new_task = Todo(content=task_content)
+        userid = current_user.id
+        new_task = Todo(content=task_content, user=userid)
 
         try:
             db.session.add(new_task)
@@ -43,7 +72,7 @@ def index():
         except:
             return 'There was an issue adding your task'
     else:
-        tasks = Todo.query.order_by(Todo.date_created).all()
+        tasks= Todo.query.filter_by(user=current_user.id).order_by(Todo.date_created).all()
         if request.method == 'POST':
             for task in tasks:
                 task.completed = 'completed' + str(task.id) in request.form
@@ -53,8 +82,9 @@ def index():
 
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update(id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     task = Todo.query.get_or_404(id)
-
     if request.method == 'POST':
         task.content = request.form['content']
         task.completed = 'completed' in request.form  # update completion status
@@ -69,6 +99,8 @@ def update(id):
 
 @app.route('/complete/<int:id>', methods=['GET', 'POST'])
 def complete(id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     task = Todo.query.get_or_404(id)
 
     if request.method == 'POST':
@@ -84,6 +116,8 @@ def complete(id):
     
 @app.route('/delete/<int:id>', methods=['GET', 'DELETE'])
 def delete(id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     task_to_delete = Todo.query.get_or_404(id)
     try:
         db.session.delete(task_to_delete)
@@ -91,6 +125,59 @@ def delete(id):
         return redirect('/')
     except:
         return 'There was a problem deleting that task'
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        password = hashlib.sha256(password.encode()).hexdigest()
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if password == user.password:
+                login_user(user, remember=True)
+                return redirect(url_for('index'))
+        flash(message='Invalid credentials or user is not exist', category='error')
+        return redirect(location=url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        password = hashlib.sha256(password.encode()).hexdigest()
+        user = User.query.filter_by(email=email).first()
+        if user:
+            flash(message='Email already exists', category='error')
+            return redirect(url_for('signup'))
+        new_user = User(email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash('Account created successfully, please login')
+        return redirect(url_for('login'))
+    return render_template('signup.html')
+
+@app.route('/allusers')
+def allusers():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    elif current_user.email != params['admin-email']:
+            return redirect(url_for('index'))
+    else:
+        users = User.query.all()
+        return render_template('allusers.html', users=users)
 
 
 
