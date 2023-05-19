@@ -20,7 +20,9 @@ with open('config.json', 'r') as c:
 
 
 DB_NAME = "database.db"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(DB_NAME)
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(DB_NAME)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = f'mysql://{params["db_username"]}:{params["db_passw"]}@{params["db_host"]}/{params["db_name"]}'
 
 db = SQLAlchemy(app)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -42,11 +44,11 @@ class User(db.Model, UserMixin):
 
 
 #create database if it is not present
-print(os.path.exists(DB_NAME))
-if not os.path.exists(DB_NAME):
-    with app.app_context():
-        db.create_all()
-    print('Created Database!')
+# print(os.path.exists(DB_NAME))
+# if not os.path.exists(DB_NAME):
+#     with app.app_context():
+#         db.create_all()
+#     print('Created Database!')
 
 
 @login_manager.user_loader
@@ -169,15 +171,6 @@ def signup():
         return redirect(url_for('login'))
     return render_template('signup.html')
 
-@app.route('/allusers')
-def allusers():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
-    elif current_user.email != params['admin-email']:
-            return redirect(url_for('index'))
-    else:
-        users = User.query.all()
-        return render_template('allusers.html', users=users)
 
 
 
